@@ -1,4 +1,4 @@
-name: bxb-init
+name: test-init
 
 on:
   workflow_dispatch:
