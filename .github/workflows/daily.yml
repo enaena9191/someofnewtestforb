@@ -188,11 +188,11 @@ jobs:
           AWS_REQUEST_CHECKSUM_CALCULATION: when_required
         run: |
           B="s3://${{ vars.R2_ACCOUNTS_BUCKET }}"; E="${{ secrets.R2_ENDPOINT }}"
-          JST_DATE=$(TZ=Asia/Tokyo date +%Y%m%d)
+          JST_DATE=$(echo "${{ needs.prepare.outputs.jst }}" | tr -d -)
           python -m daily.writeback --base accounts.csv --results-dir merged_results --out accounts.new.csv --min-rows 1
           aws s3 cp accounts.csv "$B/accounts/saitouena/accounts-${JST_DATE}.csv" --endpoint-url "$E"
           aws s3 cp accounts.new.csv "$B/accounts/saitouena/accounts.csv" --endpoint-url "$E"
-      - name: Union rarity4 into accounts.csv (tp4 only), backup + write back to R2
+      - name: Union rarity4 + merge diamond into accounts.csv (tp4 only), backup + write back to R2
         if: ${{ inputs.time_point == '4' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -201,8 +201,9 @@ jobs:
           AWS_REQUEST_CHECKSUM_CALCULATION: when_required
         run: |
           B="s3://${{ vars.R2_ACCOUNTS_BUCKET }}"; E="${{ secrets.R2_ENDPOINT }}"
-          JST_DATE=$(TZ=Asia/Tokyo date +%Y%m%d)
-          python -m daily.writeback --base accounts.csv --results-dir merged_results --out accounts.new.csv --min-rows 1 --results-col rarity4 --base-col rarity4_base_ids --mode union --sep " "
+          JST_DATE=$(echo "${{ needs.prepare.outputs.jst }}" | tr -d -)
+          python -m daily.writeback --base accounts.csv --results-dir merged_results --out accounts.r4.csv --min-rows 1 --results-col rarity4 --base-col rarity4_base_ids --mode union --sep " "
+          python -m daily.writeback --base accounts.r4.csv --results-dir merged_results --out accounts.new.csv --min-rows 1
           aws s3 cp accounts.csv "$B/accounts/saitouena/accounts-${JST_DATE}-daily4.csv" --endpoint-url "$E"
           aws s3 cp accounts.new.csv "$B/accounts/saitouena/accounts.csv" --endpoint-url "$E"
       - name: Delete this run's results from R2
